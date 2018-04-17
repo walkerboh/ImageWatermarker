@@ -5,8 +5,9 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net.Mime;
+using CsvHelper;
+using CsvHelper.Configuration;
 
 namespace ImageWatermarker
 {
@@ -29,6 +30,9 @@ namespace ImageWatermarker
                 int xPos = Convert.ToInt32(ConfigurationManager.AppSettings["HorizontalPosition"]);
                 int yPos = Convert.ToInt32(ConfigurationManager.AppSettings["VerticalPosition"]);
                 string alignment = ConfigurationManager.AppSettings["StringAlignment"];
+                string multiLineDelimiter = ConfigurationManager.AppSettings["MultilineDelimiter"];
+                int multiLineSpacing = Convert.ToInt32(ConfigurationManager.AppSettings["MultilineAdditionalSpace"]);
+                
                 StringAlignment stringAlignment;
 
                 switch (alignment.ToLowerInvariant())
@@ -59,21 +63,29 @@ namespace ImageWatermarker
                 }
                 else
                 {
-                    List<string> imagesToGenerate = File.ReadAllLines(inputFile).ToList();
-
-                    foreach (string imageToGenerate in imagesToGenerate)
+                    IEnumerable<Item> imagesToGenerate;
+                    
+                    using (TextReader sreader = new StreamReader(inputFile))
+                    using (CsvReader reader = new CsvReader(sreader))
                     {
-                        string[] line = imageToGenerate.Split(',');
+                        reader.Configuration.HasHeaderRecord = false;
+                        reader.Configuration.TrimOptions = TrimOptions.Trim;
+                        imagesToGenerate = reader.GetRecords<Item>().ToList();
+                    }
 
-                        if (line.Count() != 2)
+                    foreach (Item imageToGenerate in imagesToGenerate)
+                    {
+                        if (string.IsNullOrEmpty(imageToGenerate.Text) || string.IsNullOrEmpty(imageToGenerate.Image))
                         {
                             Console.WriteLine("Input line {0} invalid. Must have two parts: watermark text, image file name", imageToGenerate);
                             continue;
                         }
 
-                        string watermarkText = line[0].Trim();
-                        string fileName = line[1].Trim();
+                        string watermarkText = imageToGenerate.Text;
+                        string fileName = imageToGenerate.Image;
 
+                        string[] textLines = watermarkText.Split(new[] {multiLineDelimiter}, StringSplitOptions.RemoveEmptyEntries);
+                        
                         try
                         {
                             FileStream source = new FileStream(Path.Combine(imageFolder, fileName), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -83,12 +95,17 @@ namespace ImageWatermarker
                             Font font = new Font(fontName, fontSize, GraphicsUnit.Pixel);
 
                             Color color = Color.FromArgb(alpha, red, green, blue);
-
-                            Point pt = new Point(xPos, yPos);
+                            
                             SolidBrush brush = new SolidBrush(color);
 
                             Graphics graphics = Graphics.FromImage(img);
-                            graphics.DrawString(watermarkText, font, brush, pt, new StringFormat { Alignment = stringAlignment });
+                            
+                            for(int i = 0; i < textLines.Length; i++)
+                            {
+                                Point pt = new Point(xPos, yPos + (i * (fontSize + multiLineSpacing)));
+                                graphics.DrawString(textLines[i], font, brush, pt, new StringFormat {Alignment = stringAlignment});
+                            }
+
                             graphics.Dispose();
 
                             img.Save(output, ImageFormat.Png);
@@ -97,7 +114,7 @@ namespace ImageWatermarker
                             Bitmap bmp = new Bitmap(img.Width, img.Height, img.PixelFormat);
                             Graphics graphics2 = Graphics.FromImage(bmp);
                             graphics2.DrawImage(imgFinal, 0, 0, imgFinal.Width, imgFinal.Height);
-                            bmp.Save(Path.Combine(outputFolder, watermarkText + ".png"), ImageFormat.Png);
+                            bmp.Save(Path.Combine(outputFolder, CleanFileName(watermarkText) + ".png"), ImageFormat.Png);
 
                             imgFinal.Dispose();
                             img.Dispose();
@@ -124,6 +141,14 @@ namespace ImageWatermarker
             Console.WriteLine("Processing Complete");
             Console.WriteLine("Press any key to close");
             Console.ReadKey();
+        }
+
+        private static string CleanFileName(string watermarkText)
+        {
+            foreach (var c in Path.GetInvalidFileNameChars())
+                watermarkText = watermarkText.Replace(c.ToString(), "");
+
+            return watermarkText;
         }
     }
 }
