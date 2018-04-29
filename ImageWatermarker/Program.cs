@@ -83,6 +83,7 @@ namespace ImageWatermarker
 
                         string watermarkText = imageToGenerate.Text;
                         string fileName = imageToGenerate.Image;
+                        string outName = imageToGenerate.FileName;
 
                         string[] textLines = watermarkText.Split(new[] {multiLineDelimiter}, StringSplitOptions.RemoveEmptyEntries);
                         
@@ -114,7 +115,7 @@ namespace ImageWatermarker
                             Bitmap bmp = new Bitmap(img.Width, img.Height, img.PixelFormat);
                             Graphics graphics2 = Graphics.FromImage(bmp);
                             graphics2.DrawImage(imgFinal, 0, 0, imgFinal.Width, imgFinal.Height);
-                            bmp.Save(Path.Combine(outputFolder, CleanFileName(watermarkText) + ".png"), ImageFormat.Png);
+                            bmp.Save(Path.Combine(outputFolder, CleanFileName(outName) + ".png"), ImageFormat.Png);
 
                             imgFinal.Dispose();
                             img.Dispose();
