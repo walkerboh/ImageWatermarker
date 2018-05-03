@@ -140,8 +140,6 @@ namespace ImageWatermarker
             }
 
             Console.WriteLine("Processing Complete");
-            Console.WriteLine("Press any key to close");
-            Console.ReadKey();
         }
 
         private static string CleanFileName(string watermarkText)
