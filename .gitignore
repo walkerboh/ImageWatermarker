@@ -3,3 +3,7 @@
 ################################################################################
 
 /ImageWatermarker/bin/Release
+/ImageWatermarker/obj/Release
+/packages/CsvHelper.7.1.0
+/ImageWatermarker/bin/Debug
+/ImageWatermarker/obj/Debug

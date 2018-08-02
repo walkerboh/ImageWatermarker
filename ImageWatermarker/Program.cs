@@ -32,7 +32,7 @@ namespace ImageWatermarker
                 string alignment = ConfigurationManager.AppSettings["StringAlignment"];
                 string multiLineDelimiter = ConfigurationManager.AppSettings["MultilineDelimiter"];
                 int multiLineSpacing = Convert.ToInt32(ConfigurationManager.AppSettings["MultilineAdditionalSpace"]);
-                
+
                 StringAlignment stringAlignment;
 
                 switch (alignment.ToLowerInvariant())
@@ -64,7 +64,7 @@ namespace ImageWatermarker
                 else
                 {
                     IEnumerable<Item> imagesToGenerate;
-                    
+
                     using (TextReader sreader = new StreamReader(inputFile))
                     using (CsvReader reader = new CsvReader(sreader))
                     {
@@ -85,8 +85,8 @@ namespace ImageWatermarker
                         string fileName = imageToGenerate.Image;
                         string outName = imageToGenerate.FileName;
 
-                        string[] textLines = watermarkText.Split(new[] {multiLineDelimiter}, StringSplitOptions.RemoveEmptyEntries);
-                        
+                        string[] textLines = watermarkText.Split(new[] { multiLineDelimiter }, StringSplitOptions.RemoveEmptyEntries);
+
                         try
                         {
                             FileStream source = new FileStream(Path.Combine(imageFolder, fileName), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
@@ -96,15 +96,16 @@ namespace ImageWatermarker
                             Font font = new Font(fontName, fontSize, GraphicsUnit.Pixel);
 
                             Color color = Color.FromArgb(alpha, red, green, blue);
-                            
+
                             SolidBrush brush = new SolidBrush(color);
 
                             Graphics graphics = Graphics.FromImage(img);
-                            
-                            for(int i = 0; i < textLines.Length; i++)
+                            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+                            for (int i = 0; i < textLines.Length; i++)
                             {
                                 Point pt = new Point(xPos, yPos + (i * (fontSize + multiLineSpacing)));
-                                graphics.DrawString(textLines[i], font, brush, pt, new StringFormat {Alignment = stringAlignment});
+                                graphics.DrawString(textLines[i], font, brush, pt, new StringFormat { Alignment = stringAlignment });
                             }
 
                             graphics.Dispose();
